@@ -1,7 +1,7 @@
 #include "Tile.h"
 
 //Default Constructor
-Tile::Tile() : isMine(false), isRevealed((false), isFlagged(false), adjacentMines(0)){}
+Tile::Tile() : isMine(false), isRevealed(false), isFlagged(false), adjacentMines(0){}
 
 bool Tile::getIsMine() const {
     return isMine;
