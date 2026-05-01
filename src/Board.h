@@ -16,8 +16,10 @@ private:
     void generateMines();
     void calculateAdjacentMines();
     bool isValid(int row, int col) const;
+    void readConfig();
+    void revealTileRecursive(int row, int col);  // helper for flood-fill
 public:
-    Board(int rows, int cols, int mines);
+    Board();
     ~Board();
 
     // Getters

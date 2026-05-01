@@ -1,14 +1,38 @@
 #include "Board.h"
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 using namespace std;
 
-Board::Board(int rows, int cols, int mines)
-    : rows(rows), cols(cols), mineCount(mines), grid(rows, vector<Tile>(cols)) { //(cols) gives number of Tiles in each row
+Board::Board() {
+    srand(time(0));
+    readConfig();  // Read from config.cfg
 
-    srand(time(0)); //uses the current time as the seed, so you get different random numbers each time
+    // Initialize grid with the dimensions we read
+    grid = vector<vector<Tile>>(rows, vector<Tile>(cols));
+
     generateMines();
     calculateAdjacentMines();
+}
+
+void Board::readConfig() {
+    ifstream configFile("files/config.cfg");
+
+    // Check if file opened successfully
+    if (!configFile.is_open()) {
+        // If file doesn't exist, use default values
+        cols = 25;
+        rows = 16;
+        mineCount = 50;
+        return;
+    }
+
+    // Read the three values from config.cfg
+    configFile >> cols;   // Line 1: number of columns
+    configFile >> rows;   // Line 2: number of rows
+    configFile >> mineCount;  // Line 3: number of mines
+
+    configFile.close();
 }
 
 Board::~Board() {
@@ -91,14 +115,6 @@ int Board::countAdjacentMines(int row, int col) const {
     return count;
 }
 
-void Board::revealTile(int row, int col) {
-    if (!isValid(row, col)) return;
-
-    Tile* tile = getTile(row, col);
-    if (tile != nullptr && !tile->getIsRevealed()) {
-        tile->reveal();
-    }
-}
 
 void Board::flagTile(int row, int col) {
     if (!isValid(row, col)) return;
@@ -118,4 +134,43 @@ void Board::reset() {
 
     generateMines();
     calculateAdjacentMines();
+}
+
+void Board::revealTile(int row, int col) {
+    if (!isValid(row, col)) return;
+
+    Tile* tile = getTile(row, col);
+    if (tile == nullptr || tile->getIsRevealed()) return;
+
+    // Reveal this tile
+    tile->reveal();
+
+    // If it has 0 adjacent mines, flood-fill the neighbors
+    if (tile->getAdjacentMines() == 0) {
+        revealTileRecursive(row, col);
+    }
+}
+
+void Board::revealTileRecursive(int row, int col) {
+    // Check all 8 neighbors
+    for (int r = row - 1; r <= row + 1; r++) {
+        for (int c = col - 1; c <= col + 1; c++) {
+            // Skip center tile
+            if (r == row && c == col) continue;
+
+            if (isValid(r, c)) {
+                Tile* neighbor = getTile(r, c);
+
+                // If neighbor is hidden, reveal it
+                if (neighbor != nullptr && !neighbor->getIsRevealed()) {
+                    neighbor->reveal();
+
+                    // If this neighbor also has 0 mines, recurse on it
+                    if (neighbor->getAdjacentMines() == 0) {
+                        revealTileRecursive(r, c);
+                    }
+                }
+            }
+        }
+    }
 }
